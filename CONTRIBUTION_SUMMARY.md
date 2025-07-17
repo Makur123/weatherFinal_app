@@ -14,11 +14,12 @@ This contribution significantly enhances the Weather Classifier application with
 - **Enhanced Visual Elements**: Gradient buttons, modern confidence bars, and styled components
 
 ### 🗣️ Arabic Voice Announcements
-- **Text-to-Speech Integration**: Using `pyttsx3` library for voice synthesis
-- **Arabic Language Support**: Full Arabic TTS functionality
+- **Hybrid TTS System**: Cloud-compatible voice synthesis using Web Speech API + local pyttsx3
+- **Arabic Language Support**: Full Arabic TTS functionality in both environments
 - **Bilingual Interface**: English/Arabic language toggle
 - **Voice Controls**: Enable/disable voice announcements with visual feedback
 - **Smart Voice Messages**: Context-aware announcements based on weather predictions
+- **Cloud Deployment Ready**: Automatic detection and switching between TTS methods
 
 ### 🛡️ Robust Cloud Deployment
 - **Defensive Session State Programming**: Bulletproof session state management
@@ -52,7 +53,20 @@ voice_enabled_state = getattr(st.session_state, 'voice_enabled', False) if hasat
 ```
 
 ## 📦 Dependencies Added
-- `pyttsx3`: Text-to-speech engine for Arabic voice support
+- `pyttsx3`: Text-to-speech engine for local development
+- Web Speech API: Browser-based TTS for cloud deployment (no additional dependencies)
+
+## 🔧 Cloud TTS Implementation
+For cloud deployment, the app automatically detects the environment and uses browser-based speech synthesis:
+
+```javascript
+// Automatic cloud TTS using Web Speech API
+const utterance = new SpeechSynthesisUtterance(voice_text);
+utterance.lang = 'ar-SA';  // Arabic language support
+utterance.rate = 0.8;      // Comfortable speaking rate
+utterance.volume = 0.9;    // High volume
+speechSynthesis.speak(utterance);
+```
 
 ## 🎯 User Experience Improvements
 
@@ -78,6 +92,7 @@ voice_enabled_state = getattr(st.session_state, 'voice_enabled', False) if hasat
 - **Multiple Safety Layers**: Implemented defensive programming patterns
 - **Cache Management**: Added Streamlit configuration for optimal performance
 - **Error Handling**: Graceful fallbacks for voice functionality
+- **Hybrid TTS System**: Cloud-compatible voice using Web Speech API + local pyttsx3
 
 ### Code Quality
 - **Version Tracking**: Implemented version numbering (v2.2)
@@ -130,5 +145,13 @@ voice_enabled_state = getattr(st.session_state, 'voice_enabled', False) if hasat
 ## 🎉 Ready for Production
 
 This contribution is thoroughly tested and ready for production deployment. The defensive programming ensures reliable operation in cloud environments, while the enhanced UI provides a modern, professional user experience.
+
+**Key Highlights:**
+- ✅ **Session State Issues Resolved** - Bulletproof cloud deployment
+- ✅ **Voice Functionality Fixed** - Works in both local and cloud environments  
+- ✅ **Modern UI/UX** - Professional glassmorphism design with dark mode
+- ✅ **Arabic Language Support** - Full bilingual interface with voice announcements
+- ✅ **Mobile Responsive** - Optimized for all screen sizes
+- ✅ **Zero Breaking Changes** - Maintains all original functionality
 
 **All features work seamlessly together and maintain the original functionality while adding significant value to the application.**
