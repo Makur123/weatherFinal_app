@@ -2,10 +2,35 @@ import streamlit as st
 from PIL import Image
 import torch
 import time
+import os
 from model_utils import load_model, preprocess_image, predict_weather, WEATHER_CLASSES, text_to_speech, get_voice_announcement
 
 # Version: 2.2 - Robust session state with complete defensive programming
 # ⚙️ CRITICAL: Initialize ALL session state variables at the very top
+
+def _is_cloud_environment():
+    """Detect if running in a cloud environment."""
+    # Check for common cloud environment indicators
+    cloud_indicators = [
+        'STREAMLIT_CLOUD',
+        'HEROKU',
+        'AWS_LAMBDA',
+        'GOOGLE_CLOUD',
+        'AZURE',
+        'STREAMLIT_SHARING'
+    ]
+    
+    for indicator in cloud_indicators:
+        if os.environ.get(indicator):
+            return True
+    
+    # Check if running on common cloud platforms
+    hostname = os.environ.get('HOSTNAME', '').lower()
+    if any(cloud in hostname for cloud in ['heroku', 'streamlit', 'cloud']):
+        return True
+        
+    return False
+
 def init_session_state():
     """Initialize session state with defensive defaults"""
     # Force clear any corrupted session state
@@ -556,14 +581,51 @@ if image is not None:
                     # Get voice announcement text in Arabic
                     voice_text = get_voice_announcement(class_name, 'العربية', max_confidence)
                     
-                    # Use Arabic language code for TTS
-                    lang_code = 'ar'
-                    
                     # Update status to show playing
                     voice_status.info(f"🎵 {L['voice_playing']}")
                     
-                    # Play voice announcement in Arabic
-                    text_to_speech(voice_text, lang_code)
+                    # Cloud-compatible TTS using Web Speech API
+                    if _is_cloud_environment():
+                        # Use browser's built-in speech synthesis
+                        js_speech = f"""
+                        <script>
+                        function playArabicAnnouncement() {{
+                            if ('speechSynthesis' in window) {{
+                                const utterance = new SpeechSynthesisUtterance(`{voice_text}`);
+                                utterance.lang = 'ar-SA';
+                                utterance.rate = 0.8;
+                                utterance.volume = 0.9;
+                                
+                                // Set Arabic voice if available
+                                const voices = speechSynthesis.getVoices();
+                                const arabicVoice = voices.find(voice => 
+                                    voice.lang.includes('ar') || voice.name.includes('Arabic')
+                                );
+                                if (arabicVoice) {{
+                                    utterance.voice = arabicVoice;
+                                }}
+                                
+                                speechSynthesis.speak(utterance);
+                            }} else {{
+                                console.log('Speech synthesis not supported in this browser');
+                            }}
+                        }}
+                        
+                        // Wait for voices to load, then play
+                        if (speechSynthesis.getVoices().length) {{
+                            playArabicAnnouncement();
+                        }} else {{
+                            speechSynthesis.onvoiceschanged = function() {{
+                                playArabicAnnouncement();
+                            }};
+                        }}
+                        </script>
+                        """
+                        st.components.v1.html(js_speech, height=0)
+                    else:
+                        # Use pyttsx3 for local development
+                        lang_code = 'ar'
+                        text_to_speech(voice_text, lang_code)
                     
                     # Brief delay to show the playing message
                     time.sleep(1)
@@ -573,7 +635,7 @@ if image is not None:
                     
                 except Exception as e:
                     voice_status.error(f"❌ Voice error: {str(e)}" if language == "English" else f"❌ خطأ في الصوت: {str(e)}")
-                    st.info("💡 Please check your system's text-to-speech settings" if language == "English" else "💡 يرجى التحقق من إعدادات النص إلى كلام")
+                    st.info("💡 For cloud deployment, voice requires browser support for Web Speech API" if language == "English" else "💡 للنشر السحابي، يتطلب الصوت دعم متصفح لواجهة برمجة تطبيقات الكلام")
 
 # 📌 Sidebar
 with st.sidebar:

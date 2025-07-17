@@ -68,9 +68,35 @@ def predict_weather(model, image):
     return predicted.item(), probabilities.numpy()
 
 def text_to_speech(text, language='en'):
-    """Convert text to speech with language support."""
+    """Convert text to speech with cloud compatibility."""
     def speak():
         try:
+            # Check if running in cloud environment
+            import streamlit as st
+            
+            # For cloud deployment, use browser-based speech synthesis
+            if _is_cloud_environment():
+                # Generate JavaScript for Web Speech API
+                js_code = f"""
+                <script>
+                function speakText() {{
+                    if ('speechSynthesis' in window) {{
+                        const utterance = new SpeechSynthesisUtterance('{text}');
+                        utterance.lang = '{language if language != "ar" else "ar-SA"}';
+                        utterance.rate = 0.8;
+                        utterance.volume = 0.9;
+                        speechSynthesis.speak(utterance);
+                    }} else {{
+                        console.log('Speech synthesis not supported');
+                    }}
+                }}
+                speakText();
+                </script>
+                """
+                st.components.v1.html(js_code, height=0)
+                return
+            
+            # Local environment - use pyttsx3
             engine = pyttsx3.init()
             
             # Get available voices
@@ -118,6 +144,30 @@ def text_to_speech(text, language='en'):
     thread = threading.Thread(target=speak)
     thread.daemon = True
     thread.start()
+
+def _is_cloud_environment():
+    """Detect if running in a cloud environment."""
+    import os
+    # Check for common cloud environment indicators
+    cloud_indicators = [
+        'STREAMLIT_CLOUD',
+        'HEROKU',
+        'AWS_LAMBDA',
+        'GOOGLE_CLOUD',
+        'AZURE',
+        'STREAMLIT_SHARING'
+    ]
+    
+    for indicator in cloud_indicators:
+        if os.environ.get(indicator):
+            return True
+    
+    # Check if running on common cloud platforms
+    hostname = os.environ.get('HOSTNAME', '').lower()
+    if any(cloud in hostname for cloud in ['heroku', 'streamlit', 'cloud']):
+        return True
+        
+    return False
 
 def get_voice_announcement(class_name, language='English', confidence=None):
     """Get voice announcement text for the predicted weather."""
